@@ -1,4 +1,4 @@
-# Assignment 3 Spring 26
+# Assignment 3 Spring 26: 2048
 
 This directory contains a simple Qt Widgets template app:
 
