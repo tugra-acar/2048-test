@@ -1,28 +1,39 @@
-#include "qgameoverwindow.h"
-#include "qresetbutton.h"
+// qgameoverwindow.cpp - game over screen UI
+#include "gui/qgameoverwindow.h"
+#include "gui/qresetbutton.h"
 
 #include <QVBoxLayout>
 #include <QLabel>
-#include <QDebug>
-#include <QResizeEvent>
 
-QGameOverWindow::QGameOverWindow(QWidget *parent) :
-    QWidget(parent)
+QGameOverWindow::QGameOverWindow(QWidget *parent) : QWidget(parent)
 {
-    setStyleSheet("QGameOverWindow { background: rgb(237,224,200); }");
-    setFixedSize(425,205);
+    // Make sure the background stylesheet actually renders for this custom QWidget
+    setAttribute(Qt::WA_StyledBackground, true);
+    
+    // light background for game over overlay (added alpha to look like an overlay)
+    setStyleSheet("QGameOverWindow { background: rgba(237, 224, 200, 220); }");
+    setFixedSize(425, 205);
+
     QVBoxLayout *layout = new QVBoxLayout(this);
-    // game over label
+
+    // main text
     QLabel* gameover = new QLabel("Game Over!", this);
-    gameover->setStyleSheet("QLabel { color: rgb(119,110,101); font: 40pt; font: bold;} ");
-    // reset button
+    gameover->setStyleSheet("QLabel {"
+                            "  color: rgb(119,110,101);"
+                            "  font-size: 40pt;"
+                            "  font-weight: bold;"
+                            "}");
+    gameover->setAlignment(Qt::AlignCenter);
+
+    // the try again button
     reset = new QResetButton(this);
     reset->setFixedHeight(50);
     reset->setFixedWidth(100);
-    // add game over label to window
-    layout->insertWidget(0,gameover,0,Qt::AlignCenter);
-    // add reset button to window
-    layout->insertWidget(1,reset,0,Qt::AlignCenter);
+
+    layout->addWidget(gameover, 0, Qt::AlignCenter);
+    layout->addWidget(reset,    0, Qt::AlignCenter);
+
+    hide(); // hide by default on startup
 }
 
 QResetButton* QGameOverWindow::getResetBtn() const
