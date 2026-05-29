@@ -1,0 +1,14 @@
+# CMake build folder
+build/
+
+# Qt Creator / IDE files
+CMakeLists.txt.user
+.vscode/
+.qtcreator/
+compile_commands.json
+
+# macOS junk
+.DS_Store
+
+# Output files
+*.app/

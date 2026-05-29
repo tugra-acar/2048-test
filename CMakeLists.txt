@@ -14,9 +14,20 @@ qt_standard_project_setup()
 
 qt_add_executable(2048
     src/main.cpp
-    src/mainwindow.cpp
-    src/mainwindow.h
+    src/core/board.cpp
+    src/core/game.cpp
+    src/core/observer.cpp
+    src/core/subject.cpp
+    src/core/tile.cpp
+    src/gui/mainwindow.cpp
+    src/gui/qgameboard.cpp
+    src/gui/qgameoverwindow.cpp
+    src/gui/qresetbutton.cpp
+    src/gui/qtile.cpp
+    src/gui/qwinwindow.cpp
 )
+
+target_include_directories(2048 PRIVATE src)
 
 target_link_libraries(2048 PRIVATE Qt6::Widgets)
 

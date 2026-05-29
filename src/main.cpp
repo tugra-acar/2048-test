@@ -1,15 +1,24 @@
+#include "gui/mainwindow.h"
 #include <QApplication>
 
-#include "mainwindow.h"
+#include <iostream>
+#include <stdlib.h>     /* srand, rand */
+#include <time.h>       /* time */
+#include "core/board.h"
+#include "gui/qgameboard.h"
+
+#include "gui/qgameoverwindow.h"
 
 int main(int argc, char *argv[])
 {
-    QApplication app(argc, argv);
-    app.setApplicationName("Assignment 3 Spring 26 Template");
-    app.setOrganizationName("CMPE230");
+    QApplication a(argc, argv);
 
-    MainWindow window;
-    window.show();
+    a.setApplicationName("2048 Game - Assignment 3");
+    a.setOrganizationName("BOUN-CMPE230");
 
-    return app.exec();
+    srand(time(NULL));
+    QGameBoard board;
+    board.show();
+
+    return a.exec();
 }
