@@ -1,3 +1,4 @@
+// qgameboard.cpp - sets up all the UI components and links them to game logic
 #include "gui/qgameboard.h"
 #include "core/board.h"
 #include "core/game.h"
@@ -13,20 +14,24 @@
 #include <QString>
 #include <QVBoxLayout>
 
-// ════════════════════════════════════════════════════════════════════════════
-//  Style helpers
-// ════════════════════════════════════════════════════════════════════════════
+// ─── shared colors ──────────────────────────────────────────────────────────
+
+static const QString BG_MUTED      = "#bbada0";
+static const QString FG_LIGHT      = "#f9f6f2";
+static const QString FG_CAPTION    = "#eee4da";
+static const QString FG_DARK       = "#776e65";
+
+// ─── styles ─────────────────────────────────────────────────────────────────
 
 QString QGameBoard::scoreLabelStyle() {
-  // Small rounded box like the classic 2048 UI
-  return "QLabel {"
-         "  background-color: #bbada0;"
-         "  color: #f9f6f2;"
-         "  border-radius: 6px;"
-         "  padding: 4px 14px;"
-         "  font-size: 11pt;"
-         "  font-weight: bold;"
-         "}";
+  return QString("QLabel {"
+                 "  background-color: %1;"
+                 "  color: %2;"
+                 "  border-radius: 6px;"
+                 "  padding: 4px 14px;"
+                 "  font-size: 11pt;"
+                 "  font-weight: bold;"
+                 "}").arg(BG_MUTED, FG_LIGHT);
 }
 
 QString QGameBoard::actionBtnStyle() {
@@ -39,7 +44,7 @@ QString QGameBoard::actionBtnStyle() {
          "  font-size: 10pt;"
          "  font-weight: bold;"
          "}"
-         "QPushButton:hover { background-color: #9f8b77; }"
+         "QPushButton:hover  { background-color: #9f8b77; }"
          "QPushButton:pressed { background-color: #7a6655; }";
 }
 
@@ -56,85 +61,94 @@ QString QGameBoard::modeBtnActiveStyle() {
 }
 
 QString QGameBoard::modeBtnInactiveStyle() {
-  return "QPushButton {"
-         "  background-color: #bbada0;"
-         "  color: #eee4da;"
-         "  border: none;"
-         "  border-radius: 5px;"
-         "  padding: 5px 12px;"
-         "  font-size: 10pt;"
-         "}"
-         "QPushButton:hover { background-color: #cbbfb4; }";
+  return QString("QPushButton {"
+                 "  background-color: %1;"
+                 "  color: %2;"
+                 "  border: none;"
+                 "  border-radius: 5px;"
+                 "  padding: 5px 12px;"
+                 "  font-size: 10pt;"
+                 "}"
+                 "QPushButton:hover { background-color: #cbbfb4; }")
+         .arg(BG_MUTED, FG_CAPTION);
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-//  Constructor / Destructor
-// ════════════════════════════════════════════════════════════════════════════
+// ─── setup ──────────────────────────────────────────────────────────────────
 
 QGameBoard::QGameBoard(QWidget *parent) : QWidget(parent) {
   resize(520, 620);
   setStyleSheet("QGameBoard { background-color: #faf8ef; }");
 
   currentScoreValue = 0;
-  loadBestScore();
+  loadBestScore(); // get the high score from saved settings
 
-  // ── Create game logic ─────────────────────────────────────────────────
-  game = new Game(7, 7);
-  game->registerObserver(this);
+  // create the actual game instance (4x4 board)
+  int M = 4;
+  int N = 4;
+  game = new Game(M, N);
+  game->registerObserver(this); // so we get told when things change
 
+  // setup our gui grid to match
   gui_board.resize(game->getGameBoard()->getRows());
   for (int i = 0; i < game->getGameBoard()->getRows(); ++i)
     gui_board[i].resize(game->getGameBoard()->getColumns(), nullptr);
 
-  // ── Build UI ──────────────────────────────────────────────────────────
+  // ─── layout building ──────────────────────────────────────────────────────
+
   mainLayout = new QVBoxLayout(this);
   mainLayout->setContentsMargins(20, 20, 20, 20);
   mainLayout->setSpacing(10);
 
-  // ── Row 1: "2048" title  +  SCORE / BEST boxes ───────────────────────
+  // row 1: title + scores
   {
     QHBoxLayout *row1 = new QHBoxLayout();
 
     QLabel *title = new QLabel("2048", this);
-    title->setStyleSheet("QLabel {"
-                         "  color: #776e65;"
-                         "  font-size: 42pt;"
-                         "  font-weight: 900;"
-                         "}");
+    title->setStyleSheet(QString("QLabel {"
+                                 "  color: %1;"
+                                 "  font-size: 42pt;"
+                                 "  font-weight: 900;"
+                                 "}").arg(FG_DARK));
 
-    // Score box (value label below caption)
+    // score display
     QWidget *scoreBox = new QWidget(this);
     scoreBox->setStyleSheet(
-        "QWidget { background-color: #bbada0; border-radius: 6px; }");
+        QString("QWidget { background-color: %1; border-radius: 6px; }").arg(BG_MUTED));
     QVBoxLayout *scoreBoxL = new QVBoxLayout(scoreBox);
     scoreBoxL->setContentsMargins(10, 4, 10, 4);
     scoreBoxL->setSpacing(0);
+
     QLabel *scoreCap = new QLabel("SCORE", scoreBox);
-    scoreCap->setStyleSheet("color: #eee4da; font-size: 8pt; font-weight: "
-                            "bold; background: transparent;");
+    scoreCap->setStyleSheet(QString("color: %1; font-size: 8pt; font-weight: bold;"
+                                    " background: transparent;").arg(FG_CAPTION));
     scoreCap->setAlignment(Qt::AlignCenter);
+
     scorebox = new QLabel("0", scoreBox);
-    scorebox->setStyleSheet("color: #f9f6f2; font-size: 14pt; font-weight: "
-                            "bold; background: transparent;");
+    scorebox->setStyleSheet(QString("color: %1; font-size: 14pt; font-weight: bold;"
+                                    " background: transparent;").arg(FG_LIGHT));
     scorebox->setAlignment(Qt::AlignCenter);
+
     scoreBoxL->addWidget(scoreCap);
     scoreBoxL->addWidget(scorebox);
 
-    // Best box
+    // best score display
     QWidget *bestBox = new QWidget(this);
     bestBox->setStyleSheet(
-        "QWidget { background-color: #bbada0; border-radius: 6px; }");
+        QString("QWidget { background-color: %1; border-radius: 6px; }").arg(BG_MUTED));
     QVBoxLayout *bestBoxL = new QVBoxLayout(bestBox);
     bestBoxL->setContentsMargins(10, 4, 10, 4);
     bestBoxL->setSpacing(0);
+
     QLabel *bestCap = new QLabel("BEST", bestBox);
-    bestCap->setStyleSheet("color: #eee4da; font-size: 8pt; font-weight: bold; "
-                           "background: transparent;");
+    bestCap->setStyleSheet(QString("color: %1; font-size: 8pt; font-weight: bold;"
+                                   " background: transparent;").arg(FG_CAPTION));
     bestCap->setAlignment(Qt::AlignCenter);
+
     bestbox = new QLabel(QString::number(bestScoreValue), bestBox);
-    bestbox->setStyleSheet("color: #f9f6f2; font-size: 14pt; font-weight: "
-                           "bold; background: transparent;");
+    bestbox->setStyleSheet(QString("color: %1; font-size: 14pt; font-weight: bold;"
+                                   " background: transparent;").arg(FG_LIGHT));
     bestbox->setAlignment(Qt::AlignCenter);
+
     bestBoxL->addWidget(bestCap);
     bestBoxL->addWidget(bestbox);
 
@@ -146,21 +160,20 @@ QGameBoard::QGameBoard(QWidget *parent) : QWidget(parent) {
     mainLayout->addLayout(row1);
   }
 
-  // ── Row 2: subtitle + mode buttons ───────────────────────────────────
+  // row 2: subtitle + mode selectors
   {
     QHBoxLayout *row2 = new QHBoxLayout();
 
     QLabel *sub = new QLabel("Join the tiles, get to 2048!", this);
-    sub->setStyleSheet("color: #776e65; font-size: 9pt;");
+    sub->setStyleSheet(QString("color: %1; font-size: 9pt;").arg(FG_DARK));
 
-    btnNormal = new QPushButton("Normal", this);
+    btnNormal    = new QPushButton("Normal",    this);
     btnUnlimited = new QPushButton("Unlimited", this);
-    btnHard = new QPushButton("Hard", this);
+    btnHard      = new QPushButton("Hard",      this);
 
-    connect(btnNormal, &QPushButton::clicked, this, &QGameBoard::setNormalMode);
-    connect(btnUnlimited, &QPushButton::clicked, this,
-            &QGameBoard::setUnlimitedMode);
-    connect(btnHard, &QPushButton::clicked, this, &QGameBoard::setHardMode);
+    connect(btnNormal,    &QPushButton::clicked, this, &QGameBoard::setNormalMode);
+    connect(btnUnlimited, &QPushButton::clicked, this, &QGameBoard::setUnlimitedMode);
+    connect(btnHard,      &QPushButton::clicked, this, &QGameBoard::setHardMode);
 
     updateModeButtons(NORMAL);
 
@@ -172,24 +185,22 @@ QGameBoard::QGameBoard(QWidget *parent) : QWidget(parent) {
     mainLayout->addLayout(row2);
   }
 
-  // ── Row 3: Undo + Restart ─────────────────────────────────────────────
+  // row 3: undo / restart / timer warning
   {
     QHBoxLayout *row3 = new QHBoxLayout();
 
-    btnUndo = new QPushButton("← Undo (U)", this);
+    btnUndo    = new QPushButton("← Undo (U)",    this);
     btnRestart = new QPushButton("↺ Restart (R)", this);
 
     btnUndo->setStyleSheet(actionBtnStyle());
     btnRestart->setStyleSheet(actionBtnStyle());
 
-    connect(btnUndo, &QPushButton::clicked, this, &QGameBoard::undoMove);
+    connect(btnUndo,    &QPushButton::clicked, this, &QGameBoard::undoMove);
     connect(btnRestart, &QPushButton::clicked, this, &QGameBoard::resetGame);
 
-    // Timer label (only visible in Hard mode)
     timerLabel = new QLabel("", this);
-    timerLabel->setStyleSheet(
-        "color: #f65e3b; font-size: 10pt; font-weight: bold;");
-    timerLabel->hide();
+    timerLabel->setStyleSheet("color: #f65e3b; font-size: 10pt; font-weight: bold;");
+    timerLabel->hide(); // only show in hard mode
 
     row3->addWidget(btnUndo);
     row3->addWidget(btnRestart);
@@ -198,24 +209,23 @@ QGameBoard::QGameBoard(QWidget *parent) : QWidget(parent) {
     mainLayout->addLayout(row3);
   }
 
-  // ── Row 4: Game board grid ────────────────────────────────────────────
+  // row 4: the grid itself
   {
-    // boardLayout is created in drawBoard()
     boardLayout = nullptr;
     drawBoard();
   }
 
-  // ── Hard-mode timer ───────────────────────────────────────────────────
+  // setup hard mode timer (5 secs)
   hardTimer = new QTimer(this);
-  hardTimer->setInterval(5000); // 5 seconds
+  hardTimer->setInterval(5000);
   hardTimer->setSingleShot(false);
   connect(hardTimer, &QTimer::timeout, this, &QGameBoard::hardTimerFired);
 
-  // ── Overlay connections ───────────────────────────────────────────────
-  connect(gameOverWindow.getResetBtn(), &QResetButton::clicked, this,
-          &QGameBoard::resetGame);
-  connect(winWindow.getRestartBtn(), &QResetButton::clicked, this,
-          &QGameBoard::resetGame);
+  // hook up the overlay buttons
+  connect(gameOverWindow.getResetBtn(),   &QResetButton::clicked,
+          this, &QGameBoard::resetGame);
+  connect(winWindow.getRestartBtn(),      &QResetButton::clicked,
+          this, &QGameBoard::resetGame);
 
   setFocusPolicy(Qt::StrongFocus);
   setFocus();
@@ -223,9 +233,7 @@ QGameBoard::QGameBoard(QWidget *parent) : QWidget(parent) {
 
 QGameBoard::~QGameBoard() { delete game; }
 
-// ════════════════════════════════════════════════════════════════════════════
-//  Key events
-// ════════════════════════════════════════════════════════════════════════════
+// ─── input ──────────────────────────────────────────────────────────────────
 
 void QGameBoard::keyPressEvent(QKeyEvent *event) {
   if (game->isGameOver())
@@ -234,56 +242,37 @@ void QGameBoard::keyPressEvent(QKeyEvent *event) {
   Direction dir;
   bool validKey = true;
 
+  // mapping arrow keys and wasd to movements
   switch (event->key()) {
-  case Qt::Key_Up:
-  case Qt::Key_W:
-    dir = UP;
-    break;
-  case Qt::Key_Down:
-  case Qt::Key_S:
-    dir = DOWN;
-    break;
-  case Qt::Key_Left:
-  case Qt::Key_A:
-    dir = LEFT;
-    break;
-  case Qt::Key_Right:
-  case Qt::Key_D:
-    dir = RIGHT;
-    break;
-  case Qt::Key_U:
-    undoMove();
-    return;
-  case Qt::Key_R:
-    resetGame();
-    return;
-  default:
-    validKey = false;
-    break;
+  case Qt::Key_Up:    case Qt::Key_W: dir = UP;    break;
+  case Qt::Key_Down:  case Qt::Key_S: dir = DOWN;  break;
+  case Qt::Key_Left:  case Qt::Key_A: dir = LEFT;  break;
+  case Qt::Key_Right: case Qt::Key_D: dir = RIGHT; break;
+  case Qt::Key_U: undoMove();  return;
+  case Qt::Key_R: resetGame(); return;
+  default: validKey = false; break;
   }
 
   if (!validKey)
     return;
 
-  game->move(dir);
+  bool move_was_valid = game->move(dir);
 
-  // Restart hard-mode countdown after every player move
-  if (game->getMode() == HARD && !game->isGameOver())
+  // if playing hard mode, reset the 5s timer after a valid move
+  if (move_was_valid && game->getMode() == HARD && !game->isGameOver())
     hardTimer->start();
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-//  Observer callback
-// ════════════════════════════════════════════════════════════════════════════
+// ─── observer update ────────────────────────────────────────────────────────
 
 void QGameBoard::notify() {
   currentScoreValue = game->getScore();
-  saveBestScore(); // saves only if current > best
+  saveBestScore(); // will update if we beat it
 
   scorebox->setText(QString::number(currentScoreValue));
   bestbox->setText(QString::number(bestScoreValue));
 
-  drawBoard();
+  drawBoard(); // redraw tiles
 
   if (game->isGameOver()) {
     hardTimer->stop();
@@ -292,7 +281,7 @@ void QGameBoard::notify() {
     return;
   }
 
-  // Win condition (not in unlimited mode — game.cpp::won() handles that)
+  // in unlimited mode this is always false
   if (game->won()) {
     hardTimer->stop();
     timerLabel->hide();
@@ -300,30 +289,30 @@ void QGameBoard::notify() {
   }
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-//  Board drawing
-// ════════════════════════════════════════════════════════════════════════════
+// ─── drawing ────────────────────────────────────────────────────────────────
 
 void QGameBoard::drawBoard() {
+  // make the layout if it doesnt exist yet
   if (boardLayout == nullptr) {
     boardLayout = new QGridLayout();
     boardLayout->setSpacing(8);
 
-    // Wrap in a styled container widget
     QWidget *boardContainer = new QWidget(this);
-    boardContainer->setStyleSheet("QWidget { background-color: #bbada0; "
-                                  "border-radius: 8px; padding: 8px; }");
+    boardContainer->setStyleSheet(
+        QString("QWidget { background-color: %1;"
+                " border-radius: 8px; padding: 8px; }").arg(BG_MUTED));
     boardContainer->setLayout(boardLayout);
-    mainLayout->addWidget(boardContainer, 1); // stretch=1 so it fills space
+    mainLayout->addWidget(boardContainer, 1);
   }
 
-  // Clear existing tiles
+  // clear old tile widgets
   QLayoutItem *child;
   while ((child = boardLayout->takeAt(0)) != nullptr) {
     delete child->widget();
     delete child;
   }
 
+  // create new tile widgets based on current board state
   int rows = game->getGameBoard()->getRows();
   int cols = game->getGameBoard()->getColumns();
 
@@ -337,10 +326,9 @@ void QGameBoard::drawBoard() {
   }
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-//  Score persistence
-// ════════════════════════════════════════════════════════════════════════════
+// ─── saving/loading scores ──────────────────────────────────────────────────
 
+// QSettings stores this in standard OS locations (registry, plist, etc)
 void QGameBoard::loadBestScore() {
   QSettings settings;
   bestScoreValue = settings.value("bestScore", 0).toInt();
@@ -355,9 +343,7 @@ void QGameBoard::saveBestScore() {
   }
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-//  Slots
-// ════════════════════════════════════════════════════════════════════════════
+// ─── actions & modes ────────────────────────────────────────────────────────
 
 void QGameBoard::resetGame() {
   hardTimer->stop();
@@ -367,7 +353,7 @@ void QGameBoard::resetGame() {
   scorebox->setText("0");
   gameOverWindow.hide();
   winWindow.hide();
-  setFocus();
+  setFocus(); // grab focus back so keyboard works
 
   if (game->getMode() == HARD)
     hardTimer->start();
@@ -381,19 +367,25 @@ void QGameBoard::undoMove() {
 }
 
 void QGameBoard::setNormalMode() {
-  hardTimer->stop();
-  timerLabel->hide();
   game->setMode(NORMAL);
   updateModeButtons(NORMAL);
-  resetGame();
+  hardTimer->stop();
+  timerLabel->hide();
+  winWindow.hide();
+  gameOverWindow.hide();
+  game->notifyObservers(); // re-evaluates win/loss for the new mode
+  setFocus();
 }
 
 void QGameBoard::setUnlimitedMode() {
-  hardTimer->stop();
-  timerLabel->hide();
   game->setMode(UNLIMITED);
   updateModeButtons(UNLIMITED);
-  resetGame();
+  hardTimer->stop();
+  timerLabel->hide();
+  winWindow.hide();
+  gameOverWindow.hide();
+  game->notifyObservers();
+  setFocus();
 }
 
 void QGameBoard::setHardMode() {
@@ -401,7 +393,17 @@ void QGameBoard::setHardMode() {
   updateModeButtons(HARD);
   timerLabel->show();
   timerLabel->setText("Auto-move in 5s");
-  resetGame(); // resetGame() will start the timer because mode == HARD
+  winWindow.hide();
+  gameOverWindow.hide();
+  
+  if (!game->isGameOver() && !game->won()) {
+    hardTimer->start();
+  } else {
+    hardTimer->stop();
+  }
+  
+  game->notifyObservers();
+  setFocus();
 }
 
 void QGameBoard::hardTimerFired() {
@@ -410,21 +412,17 @@ void QGameBoard::hardTimerFired() {
     timerLabel->hide();
     return;
   }
-  // Execute a random valid move
+
+  // player was too slow, force a random move
   game->randomValidMove();
   timerLabel->setText("Auto-move in 5s");
-  // Timer keeps running (not single-shot), countdown restarts implicitly
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-//  UI helpers
-// ════════════════════════════════════════════════════════════════════════════
-
 void QGameBoard::updateModeButtons(GameMode active) {
-  btnNormal->setStyleSheet(active == NORMAL ? modeBtnActiveStyle()
-                                            : modeBtnInactiveStyle());
+  btnNormal->setStyleSheet(active == NORMAL       ? modeBtnActiveStyle()
+                                                  : modeBtnInactiveStyle());
   btnUnlimited->setStyleSheet(active == UNLIMITED ? modeBtnActiveStyle()
                                                   : modeBtnInactiveStyle());
-  btnHard->setStyleSheet(active == HARD ? modeBtnActiveStyle()
-                                        : modeBtnInactiveStyle());
+  btnHard->setStyleSheet(active == HARD           ? modeBtnActiveStyle()
+                                                  : modeBtnInactiveStyle());
 }

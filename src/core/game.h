@@ -1,58 +1,66 @@
+// game.h - top level game controller
+// wraps the Board with score, undo, modes, win/lose logic etc
 #ifndef GAME_H
 #define GAME_H
 
-#define WINNING_VALUE 2048
+#define WINNING_VALUE 64
 
-#include "core/subject.h"
 #include "core/board.h"
+#include "core/subject.h"
 
 #include <QStack>
 
 class Board;
 
-enum GameMode { NORMAL, UNLIMITED, HARD };
+// the three game modes we support
+enum GameMode {
+  NORMAL,    // classic 2048 rules
+  UNLIMITED, // no win condition, keep going past 2048
+  HARD       // a random move fires every 5s if you dont play
+};
 
-class Game : public Subject
-{
+class Game : public Subject {
 public:
-    Game(int row, int column);
-    ~Game();
+  Game(int row, int column);
+  ~Game();
 
-    void restart();
-    bool isGameOver() const { return gameOver; }
-    Board* getGameBoard() const { return board; }
+  void restart();
+  bool isGameOver() const { return gameOver; }
+  Board *getGameBoard() const { return board; }
 
-    // Move in a direction; returns false if the move was invalid (board didn't change)
-    bool move(Direction dir);
+  // tries to move in the given direction
+  // returns false if nothing moved (invalid move)
+  bool move(Direction dir);
 
-    // Undo last move; returns false if nothing to undo
-    bool undo();
+  // goes back to previous state, returns false if nothing to undo
+  bool undo();
 
-    bool won() const;
-    int getScore() const { return score; }
+  // checks if any tile reached 2048 (always false in unlimited mode)
+  bool won() const;
 
-    // Game mode
-    void setMode(GameMode m) { mode = m; }
-    GameMode getMode() const { return mode; }
+  int getScore() const { return score; }
 
-    // Execute a random valid move (used by Hard mode timer).
-    // Returns the direction chosen, or -1 if no valid move exists.
-    int randomValidMove();
+  void setMode(GameMode m) { mode = m; }
+  GameMode getMode() const { return mode; }
+
+  // picks a random valid direction and plays it (for hard mode timer)
+  // returns the direction used, or -1 if no valid move
+  int randomValidMove();
 
 private:
-    Board* board;
-    bool gameOver;
+  Board *board;
+  bool gameOver;
+  int score;
+  GameMode mode;
+
+  // undo history - stores board snapshot + score at each move
+  struct Snapshot {
+    Board *boardCopy;
     int score;
-    GameMode mode;
+  };
+  QStack<Snapshot> history;
 
-    // Undo history: each entry is (boardSnapshot, scoreSnapshot)
-    struct Snapshot {
-        Board* boardCopy;
-        int    score;
-    };
-    QStack<Snapshot> history;
-
-    void pushSnapshot();
+  void pushSnapshot(); // saves current state for undo
 };
 
 #endif // GAME_H
