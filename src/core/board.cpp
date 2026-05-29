@@ -72,8 +72,8 @@ QVector<int> Board::freePosition()
         int i,j;
         // keep generating random positions until empty cell is found
         do {
-            i = arc4random() % rows;
-            j = arc4random() % columns;
+            i = rand() % rows;
+            j = rand() % columns;
         } while (board[i][j] != NULL);
         pos.append(i);
         pos.append(j);
@@ -158,7 +158,7 @@ void Board::move(Direction direction)
         QVector<int> newpos = freePosition();
         if (newpos[0] != -1) {
 
-            int chance = arc4random() % 100;
+            int chance = rand() % 100;
 
             // 90% chance for 2
             if (chance < PROB_2) {
