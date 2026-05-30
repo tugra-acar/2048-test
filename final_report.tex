@@ -1,0 +1,190 @@
+\documentclass[a4paper,12pt]{article}
+
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage[justification=centering]{caption}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.6em}
+
+\lstdefinestyle{CppStyle}{
+    language=C++,
+    basicstyle=\ttfamily\footnotesize,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!40!black},
+    numbers=left,
+    numberstyle=\tiny,
+    breaklines=true,
+    frame=single
+}
+
+\title{Project 3 Report: 2048 Game\\
+\large CMPE 230 Systems Programming - Spring 2026}
+
+\author{
+Damla Demirok, 2023400231 \\
+Abdullah Tuğra Acar, 2023400219
+}
+
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Project Overview}
+
+This project implements the classic 2048 puzzle game using C++ and the Qt Widgets framework, where the objective is to slide and combine numbered tiles on an $M \times N$ grid to reach the 2048 tile. The game supports three modes: Normal Mode (ends upon reaching 2048 or running out of moves), Unlimited Mode (allows playing indefinitely beyond 2048), and Hard Mode (forces a random move every 5 seconds if the player is idle). Upon application start, the main \texttt{QGameBoard} widget initializes the game state and UI elements, entering an event loop that waits for arrow key inputs to process tile movements. Game progress, including score updates and win/loss conditions, is continuously synchronized with the interface. When the game concludes, a Win or Game Over widget is overlaid directly on the main window, pausing gameplay until a restart.
+
+\section{User Interface Design}
+
+The graphical user interface is built around the \texttt{QGameBoard} class, which inherits from \texttt{QWidget}. It acts as the central component of the application, managing both the visual representation of the game and the user controls.
+
+\begin{itemize}
+    \item \textbf{Main Window:} Houses all UI elements. It relies on a vertical layout (\texttt{QVBoxLayout}) to stack the header area, the game board, and the control area.
+    \item \textbf{Board/Grid Area:} Implemented using a \texttt{QGridLayout}, this area displays the $M \times N$ grid of \texttt{QTile} objects. Each \texttt{QTile} is a styled \texttt{QLabel} representing a specific cell on the board.
+    \item \textbf{Score Displays:} The current score and best score are displayed at the top of the window using \texttt{QLabel} widgets, updated dynamically via the Observer pattern when the game state changes.
+    \item \textbf{Buttons and Controls:} Mode selection buttons (Normal, Unlimited, Hard) and action buttons (Undo, Restart) are arranged using horizontal layouts (\texttt{QHBoxLayout}). 
+    \item \textbf{Overlays:} Separate widget classes (\texttt{QWinWindow} and \texttt{QGameOverWindow}) are instantiated and overlaid directly inside the main window (using absolute positioning) when win or loss conditions are met. This approach was specifically chosen so that the mode selection buttons remain visible and accessible in the background, allowing the player to seamlessly change the game mode even after the game has ended.
+\end{itemize}
+
+All visible UI components in \texttt{QGameBoard} are connected to the underlying \texttt{Game} and \texttt{Board} instances via the Observer pattern (for state changes) and Qt's signal-slot mechanism (for button clicks and timers).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.6\textwidth]{screenshot.png}
+    \caption{The user interface showing the board grid, score displays, mode selectors, and control buttons.}
+    \label{fig:ui}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{minipage}[t]{0.45\textwidth}
+        \centering
+        \vspace{0pt}
+        \includegraphics[width=\linewidth]{win_screenshot.png}
+        \caption[Win State Overlay]{Win State Overlay \\ (We set WINNING\_VALUE=64)}
+        \label{fig:win}
+    \end{minipage}%
+    \hspace{0.05\textwidth}%
+    \begin{minipage}[t]{0.45\textwidth}
+        \centering
+        \vspace{0pt}
+        \includegraphics[width=\linewidth]{lose_screenshot.png}
+        \caption{Game Over State Overlay}
+        \label{fig:lose}
+    \end{minipage}
+\end{figure}
+
+\section{Game State Representation}
+
+The internal game state is split between the \texttt{Board} and \texttt{Game} classes in the core module. 
+
+\textbf{Board Representation:} The game grid is stored in the \texttt{Board} class as a 2D \texttt{QVector} of \texttt{Tile} pointers (\texttt{QVector<QVector<Tile*>>}). Empty cells are represented by \texttt{nullptr}. When tiles move and merge, their internal integer values are doubled, and the remaining pointers are shifted within the vector structure.
+
+\textbf{Target Value and Modes:} The target value (2048) is checked by the \texttt{Game::won()} method by iterating over the board, unless the active mode is Unlimited, in which case it her zaman returns false. The \texttt{Game} class also tracks the current score and a boolean \texttt{gameOver} flag.
+
+\textbf{Undo History and Best Score:} 
+The score and best score are managed by the \texttt{Game} class and the UI, with the best score being persistently saved and loaded via \texttt{QSettings}.
+
+To support the undo feature, the \texttt{Game} class maintains a history stack (\texttt{QStack<Snapshot>}). Before any valid move is processed, the \texttt{pushSnapshot()} function is called. It creates a deep copy of the current \texttt{Board} object and saves it along with the current score into a \texttt{Snapshot} struct. When the player clicks Undo, the \texttt{Game::undo()} method pops the last snapshot from the stack, deletes the current board, restores the saved board and score, and notifies the UI to redraw.
+
+\section{Event-Driven Architecture and Game Logic}
+
+The application relies on Qt's event loop to respond to user interactions and timer signals. All primary logic triggers originate from the \texttt{QGameBoard} class, which listens to key events, button clicks, and timer timeouts. Upon receiving an event, \texttt{QGameBoard} invokes the appropriate method in the \texttt{Game} controller, which modifies the \texttt{Board}, and finally, the \texttt{Game} notifies its observers (the UI) to redraw the updated state.
+
+\subsection{Keyboard and Button Events}
+
+Keyboard events are intercepted by overriding \texttt{QGameBoard::keyPressEvent()}. The game maps the \texttt{Qt::Key\_Up}, \texttt{Qt::Key\_Down}, \texttt{Qt::Key\_Left}, and \texttt{Qt::Key\_Right} arrows to corresponding \texttt{Direction} enums. Invalid input keys are ignored. If the game is in a Win or Game Over state, keyboard input is blocked entirely, except if the player has won in Normal mode and switches to Unlimited mode. Keys 'U' and 'R' are also bound to Undo and Restart actions. Buttons act similarly by triggering slots connected to the \texttt{Game} class methods.
+
+\subsection{Signals, Slots, and Connections}
+
+The signal-slot mechanism is primarily used to connect UI buttons and the Hard Mode timer to the \texttt{QGameBoard} methods that handle game flow. These connections are established in the \texttt{QGameBoard} constructor.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Signal} & \textbf{Slot / Function} & \textbf{Purpose} \\
+\hline
+\texttt{btnNormal.clicked()} & \texttt{setNormalMode()} & Switch to Normal mode \\
+\hline
+\texttt{btnUnlimited.clicked()} & \texttt{setUnlimitedMode()} & Switch to Unlimited mode \\
+\hline
+\texttt{btnHard.clicked()} & \texttt{setHardMode()} & Switch to Hard mode \\
+\hline
+\texttt{btnUndo.clicked()} & \texttt{undoMove()} & Restore previous state \\
+\hline
+\texttt{btnRestart.clicked()} & \texttt{resetGame()} & Reset board and score \\
+\hline
+\texttt{hardTimer.timeout()} & \texttt{hardTimerFired()} & Execute timed random move \\
+\hline
+\end{tabular}
+\caption{Main Qt signal-slot connections used in the project.}
+\end{table}
+
+When a button is clicked, the corresponding slot (e.g., \texttt{resetGame()}) executes, modifies the internal \texttt{Game} state, stops or starts timers if necessary, and calls \texttt{drawBoard()} to visually update the screen.
+
+\subsection{Move and Merge Logic}
+
+A single move is processed in \texttt{Board::move(Direction)}. The algorithm iterates over the grid from the edge corresponding to the target direction (to prevent tiles from blocking each other). It slides tiles along the axis using \texttt{moveVertically()} or \texttt{moveHorizontally()}. 
+
+When a tile slides, it keeps moving until it hits the boundary, an empty cell, or another tile. If it hits a tile with the identical value that has not yet merged during this turn, they merge. The implementation prevents illegal double merges by setting a boolean flag \texttt{upgradedThisMove} on a tile once it merges, which is cleared via \texttt{prepareForNextMove()} before the next turn begins. After iterating through all cells, if the board state actually changed compared to a pre-move snapshot, a new tile (2 or 4) is spawned randomly in a free position.
+
+\subsection{Timer-Based Events}
+
+Hard Mode employs a \texttt{QTimer} initialized with a 5000ms (5 seconds) interval. When the timer times out, it emits the \texttt{timeout()} signal connected to \texttt{QGameBoard::hardTimerFired()}, forcing the game to make a random valid move via \texttt{Game::} \texttt{randomValidMove()}. Crucially, if the player makes a manual valid move before the timeout, the timer is restarted from zero, resetting the 5-second countdown.
+
+\section{Code Structure}
+
+The codebase is divided into two main modules: \texttt{core} for game logic and \texttt{gui} for the visual interface, promoting a clean separation of concerns via the Observer design pattern.
+
+\begin{itemize}
+    \item \textbf{\texttt{main.cpp}:} The entry point of the application. It initializes the \texttt{QApplication}, sets up organizational names (required for \texttt{QSettings} to save scores persistently), seeds the random number generator, and instantiates the main \texttt{QGameBoard}.
+    \item \textbf{Core Classes (\texttt{Game}, \texttt{Board}, \texttt{Tile}):} The \texttt{Tile} class holds the numerical value and a merge flag. The \texttt{Board} class manages the $M \times N$ matrix of tiles, handling spatial operations like sliding, merging, and spawning new tiles. The \texttt{Game} class encapsulates the \texttt{Board}, maintains the score, manages the Undo history (\texttt{QStack}), tracks the active \texttt{GameMode}, and evaluates win/loss conditions.
+    \item \textbf{Observer Pattern (\texttt{Subject}, \texttt{Observer}):} The \texttt{Game} inherits from \texttt{Subject}. Whenever the internal state changes, it notifies registered \texttt{Observer} objects (such as \texttt{QGameBoard}), keeping the logic decoupled from the UI.
+    \item \textbf{GUI Classes (\texttt{QGameBoard}, \texttt{QTile}, Overlays):} \texttt{QGameBoard} acts as the primary view and controller, intercepting key presses and mapping them to \texttt{Game} actions. \texttt{QTile} inherits from \texttt{QLabel} and provides visual styling (colors, fonts) based on the tile's integer value. Helper classes like \texttt{QWinWindow} and \texttt{QGameOverWindow} provide visual feedback when the game concludes.
+\end{itemize}
+
+\section{Testing and Debugging}
+
+Several edge cases were systematically tested to ensure stability:
+\begin{itemize}
+    \item \textbf{Mode Switching Post-Game:} We tested what happens when the game ends (win or lose) and the player switches modes. For example, we verified that switching to Unlimited mode after a Normal mode win correctly dismisses the win screen and allows continued play. Similarly, switching to Normal or Hard mode after surpassing 2048 in Unlimited mode was tested to ensure the game state evaluates the win condition immediately if applicable.
+    \item \textbf{Undo on Game Over:} We verified that pressing the Undo button while the "Game Over" (Lose) overlay is active correctly reverts the board to the previous state, dismisses the overlay, and restores player control.
+    \item \textbf{Merge Priority for Three Identical Tiles:} We tested sliding three identical tiles (e.g., \texttt{[2, 2, 2, empty]}) in both directions to verify merge prioritization. Sliding towards the right merges the tiles closest to the right edge (\texttt{[empty, empty, 2, 4]}), confirming our directional iteration logic works correctly.
+    \item \textbf{Full Boards and Valid Moves:} We verified that when the board is fully occupied, the game correctly determines if any adjacent tiles can still merge before triggering a Game Over.
+\end{itemize}
+
+\section{Challenges and Solutions}
+
+\textbf{1. Establishing the Overall File and Class Structure:} \\
+\textit{Challenge:} At the very beginning of the project, our biggest hurdle was simply figuring out the general architecture. We didn't know which files we needed to create, how many classes we should have, or how to divide responsibilities between them (e.g., separating the pure game math from the graphical interface). \\
+\textit{Solution:} To overcome this ``blank canvas'' problem, we researched and drew inspiration from various open-source 2048 projects on GitHub. This helped us understand best practices, leading us to divide the project cleanly into a \texttt{core} folder (for purely logical classes like \texttt{Game}, \texttt{Board}, and \texttt{Tile}) and a \texttt{gui} folder (for visual components like \texttt{QGameBoard}).
+
+\textbf{2. Establishing Communication Between Decoupled Classes:} \\
+\textit{Challenge:} Once we decided on the file structure, the next major challenge was making these completely separate files communicate. We struggled to understand how a change in the backend (e.g., a tile moving in \texttt{board.cpp}) should tell the UI (\texttt{qgameboard.cpp}) to redraw without the backend directly importing and manipulating UI elements. \\
+\textit{Solution:} We solved this by implementing the Observer design pattern. We created \texttt{Subject} and \texttt{Observer} base classes. The UI registers itself as an observer of the \texttt{Game}. Whenever the game state changes, it simply broadcasts a ``notify'' signal, allowing the UI to safely update itself while keeping the codebase strictly decoupled.
+
+\section{Conclusion}
+
+The strongest aspect of this design is the strict separation between the core game logic and the graphical interface, facilitated by the Observer pattern. This made implementing features like the Undo history much easier, as the UI automatically reflects whatever state the \texttt{Game} object holds. The most difficult implementation problem was handling the edge cases of tile sliding and merging, particularly ensuring that merges happen in the correct order and preventing double merges. Future improvements could include implementing smooth sliding animations for the tiles, adding customizable grid sizes through a settings menu, and introducing an online leaderboard.
+
+\section*{AI Usage Statement}
+
+The report must be written by you.
+
+If AI tools were used:
+\begin{itemize}
+\item which tools,
+\item for what purpose,
+\item confirmation that all technical content is understood.
+\end{itemize}
+
+
+\end{document}
