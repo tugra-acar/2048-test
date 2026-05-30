@@ -2,21 +2,20 @@
 #ifndef QWINWINDOW_H
 #define QWINWINDOW_H
 
-#include <QFrame>
+#include <QWidget>
 
 class QResetButton;
 
-class QWinWindow : public QFrame
-{
-    Q_OBJECT
+class QWinWindow : public QWidget {
+  Q_OBJECT
 public:
-    explicit QWinWindow(QWidget *parent = nullptr);
+  explicit QWinWindow(QWidget *parent = nullptr);
 
-    // game board needs this to handle the play again click
-    QResetButton* getRestartBtn() const;
+  // game board needs this to handle the play again click
+  QResetButton *getRestartBtn() const;
 
 private:
-    QResetButton* restartBtn;
+  QResetButton *restartBtn;
 };
 
 #endif // QWINWINDOW_H
