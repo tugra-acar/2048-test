@@ -336,17 +336,14 @@ void QGameBoard::drawBoard() {
 
 // ─── saving/loading scores ──────────────────────────────────────────────────
 
-// QSettings stores this in standard OS locations (registry, plist, etc)
+// tracked only in memory for the current session
 void QGameBoard::loadBestScore() {
-  QSettings settings;
-  bestScoreValue = settings.value("bestScore", 0).toInt();
+  bestScoreValue = 0;
 }
 
 void QGameBoard::saveBestScore() {
   if (currentScoreValue > bestScoreValue) {
     bestScoreValue = currentScoreValue;
-    QSettings settings;
-    settings.setValue("bestScore", bestScoreValue);
     bestbox->setText(QString::number(bestScoreValue));
   }
 }
