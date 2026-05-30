@@ -242,12 +242,12 @@ void QGameBoard::keyPressEvent(QKeyEvent *event) {
   Direction dir;
   bool validKey = true;
 
-  // mapping arrow keys and wasd to movements
+  // mapping arrow keys to movements (wasd removed)
   switch (event->key()) {
-  case Qt::Key_Up:    case Qt::Key_W: dir = UP;    break;
-  case Qt::Key_Down:  case Qt::Key_S: dir = DOWN;  break;
-  case Qt::Key_Left:  case Qt::Key_A: dir = LEFT;  break;
-  case Qt::Key_Right: case Qt::Key_D: dir = RIGHT; break;
+  case Qt::Key_Up:    dir = UP;    break;
+  case Qt::Key_Down:  dir = DOWN;  break;
+  case Qt::Key_Left:  dir = LEFT;  break;
+  case Qt::Key_Right: dir = RIGHT; break;
   case Qt::Key_U: undoMove();  return;
   case Qt::Key_R: resetGame(); return;
   default: validKey = false; break;
