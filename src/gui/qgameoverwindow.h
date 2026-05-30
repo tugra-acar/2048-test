@@ -1,3 +1,4 @@
+// qgameoverwindow.h - the overlay that shows up when you lose
 #ifndef QGAMEOVERWINDOW_H
 #define QGAMEOVERWINDOW_H
 
@@ -9,17 +10,13 @@ class QGameOverWindow : public QWidget
 {
     Q_OBJECT
 public:
-    explicit QGameOverWindow(QWidget *parent = 0);
+    explicit QGameOverWindow(QWidget *parent = nullptr);
 
+    // we need this so main board can connect the button click to restart game
     QResetButton* getResetBtn() const;
-
-signals:
-
-public slots:
 
 private:
     QResetButton* reset;
-
 };
 
 #endif // QGAMEOVERWINDOW_H

@@ -1,3 +1,5 @@
+// qresetbutton.h - custom label that acts like a button
+// we use this instead of QPushButton so it matches the overlay style better
 #ifndef QRESETBUTTON_H
 #define QRESETBUTTON_H
 
@@ -7,16 +9,14 @@ class QResetButton : public QLabel
 {
     Q_OBJECT
 public:
-    QResetButton( QWidget* parent = 0);
+    explicit QResetButton(QWidget* parent = nullptr);
 
 signals:
-    void clicked();
-
-public slots:
+    void clicked(); // emitted when user clicks the label
 
 protected:
-    void mousePressEvent(QMouseEvent* event);
-
+    // intercepts mouse clicks so we can emit our custom signal
+    void mousePressEvent(QMouseEvent* event) override;
 };
 
 #endif // QRESETBUTTON_H

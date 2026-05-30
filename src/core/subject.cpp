@@ -5,6 +5,7 @@ Subject::Subject()
 {
 }
 
+// go through all observers and let them know something changed
 void Subject::notifyObservers()
 {
     for (Observer* o : observers)

@@ -1,7 +1,10 @@
+// game.cpp - handles move execution, undo, win check, hard mode stuff
 #include "core/game.h"
 #include "core/tile.h"
 
 #include <cstdlib>
+
+// ─── construction / destruction ─────────────────────────────────────────────
 
 Game::Game(int row, int column)
 {
@@ -14,46 +17,51 @@ Game::Game(int row, int column)
 Game::~Game()
 {
     delete board;
+    // clean up any remaining undo snapshots
     while (!history.isEmpty())
         delete history.pop().boardCopy;
 }
 
-/* Save a deep copy of the current board + score onto the undo stack */
+// ─── undo helpers ───────────────────────────────────────────────────────────
+
+// saves a deep copy of the board + score before each move
 void Game::pushSnapshot()
 {
     Snapshot s;
-    s.boardCopy = new Board(*board); // Board has a copy-constructor
+    s.boardCopy = new Board(*board);
     s.score     = score;
     history.push(s);
 }
 
+// ─── core move ──────────────────────────────────────────────────────────────
+
 bool Game::move(Direction dir)
 {
-    // Save state BEFORE the move so we can undo it
+    // save state before moving so we can undo later
     pushSnapshot();
 
     board->move(dir);
 
-    // If the board did not change the move was invalid — pop the snapshot
-    // Board::move() calls notifyObservers() internally, so we check via changed()
-    // We detect an invalid move by comparing the top snapshot with current board
+    // if board didnt change, the move was invalid - throw away the snapshot
     if (!history.isEmpty() && !history.top().boardCopy->changed(*board)) {
-        // Board::changed is const on both sides; expose a const version or use the existing one
-        // Actually the existing signature is changed(Board&) non-const second arg —
-        // we'll just keep the snapshot (harmless extra memory) and treat as no-op.
+        Snapshot s = history.pop();
+        delete s.boardCopy;
+        return false;
     }
 
-    // Update score
+    // add up score from any merges
     if (board->isTileCollisionLastRound())
         score += board->getPointsScoredLastRound();
 
-    // Check lose condition
+    // check if the player is stuck
     if (!board->movePossible())
         gameOver = true;
 
     notifyObservers();
     return true;
 }
+
+// ─── undo ───────────────────────────────────────────────────────────────────
 
 bool Game::undo()
 {
@@ -62,55 +70,62 @@ bool Game::undo()
 
     Snapshot s = history.pop();
 
-    // Swap current board with the snapshot
     delete board;
     board     = s.boardCopy;
     score     = s.score;
-    gameOver  = false;   // if we're undoing, the game is back on
+    gameOver  = false;   // if we're undoing, game continues
 
     notifyObservers();
     return true;
 }
 
+// ─── win detection ──────────────────────────────────────────────────────────
+
 bool Game::won() const
 {
-    // In UNLIMITED mode we never stop at the winning value
+    // unlimited mode has no win condition
     if (mode == UNLIMITED)
         return false;
 
     for (int i = 0; i < board->getRows(); ++i)
         for (int j = 0; j < board->getColumns(); ++j)
-            if (board->getTile(i,j) != nullptr &&
-                board->getTile(i,j)->getValue() == WINNING_VALUE)
+            if (board->getTile(i, j) != nullptr &&
+                board->getTile(i, j)->getValue() == WINNING_VALUE)
                 return true;
     return false;
 }
 
+// ─── hard mode: random move ─────────────────────────────────────────────────
+
+// tries all 4 directions in random order, plays the first valid one
 int Game::randomValidMove()
 {
-    // Try all four directions in random order until a valid one is found
     Direction dirs[4] = { UP, DOWN, LEFT, RIGHT };
 
-    // Fisher-Yates shuffle
+    // shuffle the directions randomly (fisher-yates)
     for (int i = 3; i > 0; --i) {
         int j = rand() % (i + 1);
         Direction tmp = dirs[i]; dirs[i] = dirs[j]; dirs[j] = tmp;
     }
 
+    // try each one on a copy to see if it actually does something
     for (int k = 0; k < 4; ++k) {
-        // Check validity by simulating on a copy
         Board copy(*board);
         copy.move(dirs[k]);
-        if (copy.changed(*board)) { // copy changed → move was valid
+        if (copy.changed(*board)) {
             move(dirs[k]);
             return dirs[k];
         }
     }
-    return -1; // no valid move
+
+    return -1;   // no valid move left
 }
+
+// ─── restart ────────────────────────────────────────────────────────────────
 
 void Game::restart()
 {
+    // get rid of all saved undo states
     while (!history.isEmpty())
         delete history.pop().boardCopy;
 

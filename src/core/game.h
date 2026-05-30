@@ -3,7 +3,7 @@
 #ifndef GAME_H
 #define GAME_H
 
-#define WINNING_VALUE 64
+#define WINNING_VALUE 2048
 
 #include "core/board.h"
 #include "core/subject.h"

@@ -75,7 +75,7 @@ QString QGameBoard::modeBtnInactiveStyle() {
 
 // ─── setup ──────────────────────────────────────────────────────────────────
 
-QGameBoard::QGameBoard(QWidget *parent) : QWidget(parent) {
+QGameBoard::QGameBoard(QWidget *parent) : QWidget(parent), gameOverWindow(this), winWindow(this) {
   resize(520, 620);
   setStyleSheet("QGameBoard { background-color: #faf8ef; }");
 
@@ -256,6 +256,10 @@ void QGameBoard::keyPressEvent(QKeyEvent *event) {
   if (!validKey)
     return;
 
+  // Block movement if player won in normal mode (they must switch to unlimited to continue)
+  if (game->won() && game->getMode() != UNLIMITED)
+    return;
+
   bool move_was_valid = game->move(dir);
 
   // if playing hard mode, reset the 5s timer after a valid move
@@ -277,6 +281,8 @@ void QGameBoard::notify() {
   if (game->isGameOver()) {
     hardTimer->stop();
     timerLabel->hide();
+    gameOverWindow.move(width() / 2 - gameOverWindow.width() / 2, height() / 2 - gameOverWindow.height() / 2);
+    gameOverWindow.raise();
     gameOverWindow.show();
     return;
   }
@@ -285,6 +291,8 @@ void QGameBoard::notify() {
   if (game->won()) {
     hardTimer->stop();
     timerLabel->hide();
+    winWindow.move(width() / 2 - winWindow.width() / 2, height() / 2 - winWindow.height() / 2);
+    winWindow.raise();
     winWindow.show();
   }
 }

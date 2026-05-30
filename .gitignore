@@ -12,3 +12,6 @@ compile_commands.json
 
 # Output files
 *.app/
+
+# Cache directories
+.cache/

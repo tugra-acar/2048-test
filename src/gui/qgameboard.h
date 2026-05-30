@@ -1,3 +1,5 @@
+// qgameboard.h - the main GUI class that brings everything together
+// handles drawing the grid, scoring, buttons, and user input
 #ifndef QGAMEBOARD_H
 #define QGAMEBOARD_H
 
@@ -26,57 +28,57 @@ public:
     explicit QGameBoard(QWidget *parent = nullptr);
     ~QGameBoard();
 
-    void notify();
+    // called whenever the board changes so we can update UI
+    void notify() override;
 
 protected:
-    void keyPressEvent(QKeyEvent *event);
+    // catches wasd/arrows and sends to game
+    void keyPressEvent(QKeyEvent *event) override;
 
 private:
-    // ── Core ────────────────────────────────────────────────────────────────
     Game*  game;
-    QVector<QVector<QTile*>> gui_board;
+    QVector<QVector<QTile*>> gui_board; // keeps track of the visual tiles
 
-    // ── Layouts ─────────────────────────────────────────────────────────────
+    // layouts for arranging the window
     QVBoxLayout* mainLayout;
     QGridLayout* boardLayout;
 
-    // ── Score labels ────────────────────────────────────────────────────────
-    QLabel* scorebox;       // shows current score (styled box)
-    QLabel* bestbox;        // shows best score   (styled box)
+    // score stuff
+    QLabel* scorebox;
+    QLabel* bestbox;
     int     currentScoreValue;
     int     bestScoreValue;
 
-    // ── Mode buttons ────────────────────────────────────────────────────────
+    // game mode selection
     QPushButton* btnNormal;
     QPushButton* btnUnlimited;
     QPushButton* btnHard;
 
-    // ── Action buttons ──────────────────────────────────────────────────────
+    // undo/restart
     QPushButton* btnUndo;
     QPushButton* btnRestart;
 
-    // ── Hard-mode timer ─────────────────────────────────────────────────────
-    QTimer* hardTimer;           // fires every 5 s if player hasn't moved
-    QLabel* timerLabel;          // optional countdown display
+    // for hard mode
+    QTimer* hardTimer;
+    QLabel* timerLabel;
 
-    // ── Overlays ────────────────────────────────────────────────────────────
+    // win/loss screens
     QGameOverWindow gameOverWindow;
     QWinWindow      winWindow;
 
-    // ── Helpers ─────────────────────────────────────────────────────────────
     void drawBoard();
     void loadBestScore();
     void saveBestScore();
     void updateModeButtons(GameMode active);
-    void setGameInputEnabled(bool enabled);
 
-    // Style helpers
+    // common styling to avoid copy pasting massive strings everywhere
     static QString scoreLabelStyle();
     static QString actionBtnStyle();
     static QString modeBtnActiveStyle();
     static QString modeBtnInactiveStyle();
 
 private slots:
+    // what happens when buttons are clicked or timer fires
     void resetGame();
     void undoMove();
     void setNormalMode();

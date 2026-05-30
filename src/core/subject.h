@@ -1,9 +1,9 @@
+// subject.h - the other half of the observer pattern
+// both Board and Game inherit from this so they can notify the GUI
 #ifndef SUBJECT_H
 #define SUBJECT_H
 
 #include <vector>
-
-using namespace std;
 
 class Observer;
 
@@ -11,11 +11,13 @@ class Subject
 {
 public:
     Subject();
-    void notifyObservers();
+    virtual ~Subject() = default;
+
+    void notifyObservers();    // calls notify() on all registered observers
     void registerObserver(Observer* observer);
 
 private:
-    vector<Observer*> observers;
+    std::vector<Observer*> observers;
 };
 
 #endif // SUBJECT_H
