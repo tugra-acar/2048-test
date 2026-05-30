@@ -5,7 +5,7 @@
 #include <QVBoxLayout>
 #include <QLabel>
 
-QGameOverWindow::QGameOverWindow(QWidget *parent) : QWidget(parent)
+QGameOverWindow::QGameOverWindow(QWidget *parent) : QFrame(parent)
 {
     // Make sure the background stylesheet actually renders for this custom QWidget
     setAttribute(Qt::WA_StyledBackground, true);

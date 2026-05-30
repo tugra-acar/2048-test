@@ -5,7 +5,7 @@
 #include <QVBoxLayout>
 #include <QLabel>
 
-QWinWindow::QWinWindow(QWidget *parent) : QWidget(parent)
+QWinWindow::QWinWindow(QWidget *parent) : QFrame(parent)
 {
     // Make sure the background stylesheet actually renders for this custom QWidget
     setAttribute(Qt::WA_StyledBackground, true);

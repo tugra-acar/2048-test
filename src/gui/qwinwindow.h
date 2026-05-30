@@ -2,11 +2,11 @@
 #ifndef QWINWINDOW_H
 #define QWINWINDOW_H
 
-#include <QWidget>
+#include <QFrame>
 
 class QResetButton;
 
-class QWinWindow : public QWidget
+class QWinWindow : public QFrame
 {
     Q_OBJECT
 public:
