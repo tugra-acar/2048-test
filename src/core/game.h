@@ -38,6 +38,9 @@ public:
   // checks if any tile reached 2048 (always false in unlimited mode)
   bool won() const;
 
+  // checks if any tile reached 2048 regardless of mode (used for unlimited banner)
+  bool hasReachedWinningValue() const;
+
   int getScore() const { return score; }
 
   void setMode(GameMode m) { mode = m; }

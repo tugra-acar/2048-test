@@ -1,4 +1,4 @@
-// tile.h - represents a single tile on the board
+// tile.h - represents a single tile on the board 
 #ifndef TILE_H
 #define TILE_H
 

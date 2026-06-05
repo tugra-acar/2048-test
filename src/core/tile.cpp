@@ -1,2 +1,2 @@
-// tile.cpp - nothing here since Tile is basically header-only
+// tile.cpp - nothing here since writed inline 
 #include "core/tile.h"
