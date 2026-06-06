@@ -400,6 +400,12 @@ void QGameBoard::undoMove() {
   if (game->isGameOver())
     return;
   game->undo();
+  
+  // If we undid the move that won the game, reset the flag so we can experience the win again!
+  if (!game->won()) {
+    winMessageShown = false;
+  }
+  
   setFocus();
 }
 
