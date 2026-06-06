@@ -245,9 +245,18 @@ QGameBoard::QGameBoard(QWidget *parent)
     resetGame();
   });
   
-  // Ensure we get keyboard focus back when dialogs are closed via 'X'
-  connect(&gameOverWindow, &QDialog::finished, this, [this]() { setFocus(); });
-  connect(&winWindow, &QDialog::finished, this, [this]() { setFocus(); });
+  // Ensure we get keyboard focus back when dialogs are closed via 'X' (especially for WebAssembly)
+  auto restoreFocus = [this]() {
+    QTimer::singleShot(10, this, [this]() {
+      if (this->window()) {
+        this->window()->activateWindow();
+      }
+      this->setFocus();
+    });
+  };
+
+  connect(&gameOverWindow, &QDialog::finished, this, restoreFocus);
+  connect(&winWindow, &QDialog::finished, this, restoreFocus);
 
   setFocusPolicy(Qt::StrongFocus);
   setFocus();
