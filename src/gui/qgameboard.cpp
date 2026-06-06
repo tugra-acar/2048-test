@@ -235,11 +235,19 @@ QGameBoard::QGameBoard(QWidget *parent)
   hardTimer->setSingleShot(false);
   connect(hardTimer, &QTimer::timeout, this, &QGameBoard::hardTimerFired);
 
-  // hook up the overlay buttons
-  connect(gameOverWindow.getResetBtn(), &QResetButton::clicked, this,
-          &QGameBoard::resetGame);
-  connect(winWindow.getRestartBtn(), &QResetButton::clicked, this,
-          &QGameBoard::resetGame);
+  // hook up the dialog buttons
+  connect(gameOverWindow.getResetBtn(), &QResetButton::clicked, this, [this]() {
+    gameOverWindow.close();
+    resetGame();
+  });
+  connect(winWindow.getRestartBtn(), &QResetButton::clicked, this, [this]() {
+    winWindow.close();
+    resetGame();
+  });
+  
+  // Ensure we get keyboard focus back when dialogs are closed via 'X'
+  connect(&gameOverWindow, &QDialog::finished, this, [this]() { setFocus(); });
+  connect(&winWindow, &QDialog::finished, this, [this]() { setFocus(); });
 
   setFocusPolicy(Qt::StrongFocus);
   setFocus();
@@ -295,7 +303,6 @@ void QGameBoard::keyPressEvent(QKeyEvent *event) {
   if (move_was_valid && game->getMode() == HARD && !game->isGameOver())
     hardTimer->start();
 }
-
 // ─── observer update ────────────────────────────────────────────────────────
 
 void QGameBoard::notify() {
@@ -310,20 +317,14 @@ void QGameBoard::notify() {
   if (game->isGameOver()) {
     hardTimer->stop();
     timerLabel->hide();
-    gameOverWindow.move(width() / 2 - gameOverWindow.width() / 2,
-                        height() / 2 - gameOverWindow.height() / 2);
-    gameOverWindow.raise();
     gameOverWindow.show();
     return;
   }
 
-  // in unlimited mode this is always false
-  if (game->won()) {
+  if (game->won() && !winMessageShown) {
+    winMessageShown = true;
     hardTimer->stop();
     timerLabel->hide();
-    winWindow.move(width() / 2 - winWindow.width() / 2,
-                   height() / 2 - winWindow.height() / 2);
-    winWindow.raise();
     winWindow.show();
   }
 }
@@ -388,6 +389,7 @@ void QGameBoard::resetGame() {
   scorebox->setText("0");
   gameOverWindow.hide();
   winWindow.hide();
+  winMessageShown = false;
   setFocus(); // grab focus back so keyboard works
 
   if (game->getMode() == HARD)

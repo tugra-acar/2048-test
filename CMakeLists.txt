@@ -20,6 +20,7 @@ qt_add_executable(2048
     src/core/observer.cpp
     src/core/subject.cpp
     src/core/tile.cpp
+    src/gui/mainwindow.cpp
     src/gui/qgameboard.cpp
     src/gui/qgameoverwindow.cpp
     src/gui/qresetbutton.cpp

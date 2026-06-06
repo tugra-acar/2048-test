@@ -2,11 +2,11 @@
 #ifndef QWINWINDOW_H
 #define QWINWINDOW_H
 
-#include <QWidget>
+#include <QDialog>
 
 class QResetButton;
 
-class QWinWindow : public QWidget {
+class QWinWindow : public QDialog {
   Q_OBJECT
 public:
   explicit QWinWindow(QWidget *parent = nullptr);

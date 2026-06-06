@@ -1,5 +1,5 @@
 // main.cpp - starts the app
-#include "gui/qgameboard.h"
+#include "gui/mainwindow.h"
 
 #include <QApplication>
 #include <cstdlib>
@@ -16,9 +16,9 @@ int main(int argc, char *argv[])
     // seed random generator so tiles dont spawn the exact same way every time
     srand(static_cast<unsigned>(time(nullptr)));
 
-    // just show the board directly
-    QGameBoard board;
-    board.show();
+    // just show the board directly inside the main window
+    MainWindow window;
+    window.show();
 
     return a.exec();
 }

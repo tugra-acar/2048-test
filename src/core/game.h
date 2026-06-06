@@ -3,7 +3,7 @@
 #ifndef GAME_H
 #define GAME_H
 
-#define WINNING_VALUE 2048
+#define WINNING_VALUE 64
 
 #include "core/board.h"
 #include "core/subject.h"
@@ -38,7 +38,8 @@ public:
   // checks if any tile reached 2048 (always false in unlimited mode)
   bool won() const;
 
-  // checks if any tile reached 2048 regardless of mode (used for unlimited banner)
+  // checks if any tile reached 2048 regardless of mode (used for unlimited
+  // banner)
   bool hasReachedWinningValue() const;
 
   int getScore() const { return score; }

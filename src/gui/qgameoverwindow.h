@@ -2,11 +2,11 @@
 #ifndef QGAMEOVERWINDOW_H
 #define QGAMEOVERWINDOW_H
 
-#include <QWidget>
+#include <QDialog>
 
 class QResetButton;
 
-class QGameOverWindow : public QWidget {
+class QGameOverWindow : public QDialog {
   Q_OBJECT
 public:
   explicit QGameOverWindow(QWidget *parent = nullptr);
