@@ -14,7 +14,7 @@ QWinWindow::QWinWindow(QWidget *parent) : QDialog(parent) {
 
   QVBoxLayout *layout = new QVBoxLayout(this);
 
-  QLabel *winLabel = new QLabel("You Win! 🎉", this);
+  QLabel *winLabel = new QLabel("You Win!", this);
   winLabel->setStyleSheet("QLabel {"
                           "  color: rgb(119,110,101);"
                           "  font-size: 28pt;"
