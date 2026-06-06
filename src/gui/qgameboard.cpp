@@ -267,9 +267,6 @@ QGameBoard::~QGameBoard() { delete game; }
 // ─── input ──────────────────────────────────────────────────────────────────
 
 void QGameBoard::keyPressEvent(QKeyEvent *event) {
-  if (game->isGameOver())
-    return;
-
   Direction dir;
   bool validKey = true;
 
@@ -299,6 +296,10 @@ void QGameBoard::keyPressEvent(QKeyEvent *event) {
   }
 
   if (!validKey)
+    return;
+
+  // Block movements if game is over
+  if (game->isGameOver())
     return;
 
   // Block movement if player won in normal mode (they must switch to unlimited
